@@ -8,24 +8,27 @@ import { motion } from 'framer-motion';
  * Toggle button untuk switch antara dark dan light mode
  * Menggunakan Framer Motion untuk animasi yang smooth
  */
-export default function ThemeToggle() {
+export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
     const { theme, toggleTheme } = useTheme();
+    const buttonClassName = compact
+        ? 'relative p-1.5 rounded-xl bg-dark-surface/50 dark:bg-dark-surface/50 border border-dark-border/50 dark:border-dark-border/50 backdrop-blur-md hover:bg-dark-hover/50 dark:hover:bg-dark-hover/50 transition-all duration-300 group'
+        : 'relative p-2 rounded-lg bg-dark-surface/50 dark:bg-dark-surface/50 border border-dark-border/50 dark:border-dark-border/50 backdrop-blur-md hover:bg-dark-hover/50 dark:hover:bg-dark-hover/50 transition-all duration-300 group';
+    const iconClassName = compact ? 'absolute w-5 h-5' : 'absolute w-6 h-6';
+    const iconBoxClassName = compact ? 'relative w-5 h-5 flex items-center justify-center' : 'relative w-6 h-6 flex items-center justify-center';
+    const glowClassName = 'absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10 bg-accent-primary/10 blur-xl';
 
     return (
         <motion.button
             onClick={toggleTheme}
-            className="relative p-2 rounded-lg bg-dark-surface/50 dark:bg-dark-surface/50 
-                 border border-dark-border/50 dark:border-dark-border/50
-                 backdrop-blur-md hover:bg-dark-hover/50 dark:hover:bg-dark-hover/50
-                 transition-all duration-300 group"
+            className={buttonClassName}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             aria-label="Toggle theme"
         >
-            <div className="relative w-6 h-6 flex items-center justify-center">
+            <div className={iconBoxClassName}>
                 {/* Sun Icon (Light Mode) */}
                 <motion.svg
-                    className="absolute w-6 h-6 text-amber-500"
+                    className={`${iconClassName} text-amber-500`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -43,7 +46,7 @@ export default function ThemeToggle() {
 
                 {/* Moon Icon (Dark Mode) */}
                 <motion.svg
-                    className="absolute w-6 h-6 text-indigo-400"
+                    className={`${iconClassName} text-indigo-400`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -61,9 +64,7 @@ export default function ThemeToggle() {
             </div>
 
             {/* Glow effect on hover */}
-            <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 
-                      transition-opacity duration-300 -z-10
-                      bg-accent-primary/10 blur-xl" />
+            <div className={glowClassName} />
         </motion.button>
     );
 }

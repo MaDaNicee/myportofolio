@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ClientNavbar from "@/components/ClientNavbar";
+// Import komponen Meteors
+import Meteors from "@/components/Meteors"; 
 
 const inter = Inter({
   subsets: ["latin"],
@@ -10,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio - John Doe",
-  description: "Senior Frontend Developer specializing in React, Next.js, and modern web technologies",
+  title: "Portfolio - Muhammad Nur Ramadhan",
+  description: "FullStack Developer specializing in Next.js and modern web technologies",
 };
 
 export default function RootLayout({
@@ -22,7 +24,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Blocking script to prevent FOUC and hydration mismatch */}
         <script dangerouslySetInnerHTML={{
           __html: `
             (function() {
@@ -36,8 +37,18 @@ export default function RootLayout({
           `
         }} />
       </head>
-      <body className={`${inter.variable} antialiased bg-light-bg dark:bg-dark-bg text-text-light-primary dark:text-text-dark-primary transition-colors duration-300`}>
+      <body className={`${inter.variable} antialiased bg-light-bg dark:bg-dark-bg text-text-light-primary dark:text-text-dark-primary transition-colors duration-300 relative`}>
         <ThemeProvider>
+          
+          {/* === GLOBAL FIXED BACKGROUND === */}
+          <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+            {/* 1. Grid Pattern */}
+            <div className="absolute inset-0 bg-grid-pattern opacity-[0.6] dark:opacity-[0.5]" />
+            
+            {/* 2. Meteor Effect (Sekarang Sticky di seluruh halaman) */}
+            <Meteors number={30} />
+          </div>
+          
           <ClientNavbar />
           {children}
         </ThemeProvider>

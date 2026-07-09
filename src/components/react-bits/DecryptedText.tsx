@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
+// Fix S6759: Mark props as read-only
 interface DecryptedTextProps {
-  text: string;
-  speed?: number;
-  maxIterations?: number;
-  sequential?: boolean;
-  revealDirection?: 'start' | 'end' | 'center';
-  useOriginalCharsOnly?: boolean;
-  characters?: string;
-  className?: string;
-  parentClassName?: string;
-  animateOn?: 'view' | 'hover';
-  [key: string]: any;
+  readonly text: string;
+  readonly speed?: number;
+  readonly maxIterations?: number;
+  readonly sequential?: boolean;
+  readonly revealDirection?: 'start' | 'end' | 'center';
+  readonly useOriginalCharsOnly?: boolean;
+  readonly characters?: string;
+  readonly className?: string;
+  readonly parentClassName?: string;
+  readonly animateOn?: 'view' | 'hover';
+  readonly [key: string]: any;
 }
 
 export default function DecryptedText({
@@ -35,18 +36,42 @@ export default function DecryptedText({
   const [isScrolled, setIsScrolled] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
 
+  // Helper to get a random character
+  const getNextChar = useCallback(() => {
+    const source = useOriginalCharsOnly ? text : characters;
+    const index = Math.floor(Math.random() * source.length);
+    return source[index];
+  }, [useOriginalCharsOnly, text, characters]);
+
+  // Fix S2004 & S3776: Extracted logic to reduce nesting and complexity
+  const resolveCharacter = useCallback((
+    char: string, 
+    index: number, 
+    currentIteration: number
+  ) => {
+    if (char === ' ') return char;
+
+    if (sequential) {
+      const progress = currentIteration / maxIterations;
+      const len = text.length;
+
+      if (revealDirection === 'start') {
+        if (index < progress * len) return text[index];
+      } else if (revealDirection === 'end') {
+        if (index > len - (progress * len)) return text[index];
+      } else if (revealDirection === 'center') {
+        const center = len / 2;
+        const range = progress * center;
+        if (index >= center - range && index <= center + range) return text[index];
+      }
+    }
+    
+    return getNextChar();
+  }, [sequential, revealDirection, maxIterations, text, getNextChar]);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     let currentIteration = 0;
-
-    const getNextChar = (char: string) => {
-      if (useOriginalCharsOnly) {
-        const index = Math.floor(Math.random() * text.length);
-        return text[index];
-      }
-      const index = Math.floor(Math.random() * characters.length);
-      return characters[index];
-    };
 
     const runAnimation = () => {
       if (currentIteration >= maxIterations) {
@@ -57,21 +82,7 @@ export default function DecryptedText({
       setDisplayText((prev) =>
         prev
           .split('')
-          .map((char, index) => {
-            if (char === ' ') return char;
-            if (sequential) {
-              if (revealDirection === 'start') {
-                if (index < (currentIteration / maxIterations) * text.length) return text[index];
-              } else if (revealDirection === 'end') {
-                if (index > text.length - (currentIteration / maxIterations) * text.length) return text[index];
-              } else if (revealDirection === 'center') {
-                const center = text.length / 2;
-                const progress = (currentIteration / maxIterations) * (text.length / 2);
-                if (index >= center - progress && index <= center + progress) return text[index];
-              }
-            }
-            return getNextChar(char);
-          })
+          .map((char, index) => resolveCharacter(char, index, currentIteration))
           .join('')
       );
       currentIteration++;
@@ -88,17 +99,15 @@ export default function DecryptedText({
     text,
     speed,
     maxIterations,
-    sequential,
-    revealDirection,
-    useOriginalCharsOnly,
-    characters,
     animateOn,
     isHovering,
     isScrolled,
+    resolveCharacter // Added dependency
   ]);
 
   useEffect(() => {
     if (animateOn !== 'view') return;
+    
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -109,6 +118,7 @@ export default function DecryptedText({
       },
       { threshold: 0.1 }
     );
+
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, [animateOn]);

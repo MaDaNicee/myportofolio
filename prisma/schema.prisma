@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  name      String
+  nickname  String
+  title     String
+  avatar    String
+  cvUrl     String?
+  bio       String
+  email     String
+  phone     String
+  github    String
+  linkedin  String
+  instagram String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  technologies String[]
+  imageUrl     String
+  demoUrl      String?
+  githubUrl    String?
+  featured     Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Experience {
+  id           String   @id @default(cuid())
+  role         String
+  company      String
+  type         String
+  period       String
+  location     String
+  description  String
+  highlights   String[]
+  technologies String[]
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Certificate {
+  id        String   @id @default(cuid())
+  name      String
+  issuer    String
+  date      String
+  url       String
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Skill {
+  id        String   @id @default(cuid())
+  name      String
+  iconKey   String?
+  group     String   @default("row1")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  name      String
+  role      String   @default("Visitor")
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

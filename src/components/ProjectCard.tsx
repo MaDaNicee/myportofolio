@@ -27,12 +27,20 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
         <div className="absolute inset-0 bg-light-card/70 dark:bg-dark-card/70 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-center justify-center gap-4" />
         
         {/* Gambar Project */}
-        <Image
-          src={project.imageUrl}
-          alt={project.title}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+        {project.imageUrl ? (
+          <Image
+            src={project.imageUrl}
+            alt={project.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-light-surface text-text-light-muted dark:bg-black/30 dark:text-white/30" aria-label="Project image empty">
+            <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5l4.5-4.5a2.1 2.1 0 013 0l1.5 1.5 3-3a2.1 2.1 0 013 0L21 13.5M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2zm4-10h.01" />
+            </svg>
+          </div>
+        )}
 
         {/* Tombol Action (Muncul saat Hover) */}
         <div className="absolute inset-0 z-20 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

@@ -9,11 +9,11 @@ import {
 // --- INTERFACES ---
 
 export interface Project {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   technologies: string[];
-  imageUrl: string;
+  imageUrl?: string | null;
   demoUrl?: string;
   githubUrl?: string;
   featured: boolean;
@@ -24,6 +24,7 @@ export interface ProfileData {
   nickname: string;
   title: string;
   avatar: string;
+  cvUrl?: string;
   bio: string;
   email: string;
   phone: string;
@@ -34,7 +35,7 @@ export interface ProfileData {
 
 // UPDATE: Tambahkan imageUrl di sini
 export interface Certificate {
-  id: number;
+  id: string | number;
   name: string;
   issuer: string;
   date: string;
@@ -42,162 +43,91 @@ export interface Certificate {
   imageUrl?: string; // Field baru untuk gambar sertifikat
 }
 
+export interface Experience {
+  id: string | number;
+  role: string;
+  company: string;
+  type: string;
+  period: string;
+  location: string;
+  description: string;
+  highlights: string[];
+  technologies: string[];
+}
+
+export interface PortfolioComment {
+  id: string | number;
+  name: string;
+  role: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface SkillItem {
   name: string;
   icon: React.JSX.Element;
 }
 
-// --- DATA ---
+export interface ApiSkill {
+  id: string | number;
+  name: string;
+  iconKey?: string | null;
+  group?: string | null;
+  sortOrder?: number | null;
+}
 
-export const profileData: ProfileData = {
-  name: "Muhammad Nur Ramadhan",
-  nickname: "Madan",
-  title: "Junior FullStack Developer",
-  avatar: "/fotoku.jpeg", 
-  bio: "Mahasiswa Informatika Semester 6yang fokus pada Web Development. Berpengalaman membangun aplikasi Fullstack menggunakan React.js, Node.js, dan PostgreSql. Suka memecahkan masalah kompleks dan menciptakan UI yang interaktif serta performa tinggi.",
-  email: "26oktoberramadhan@gmail.com",
-  phone: "+6283141931776",
-  github: "https://github.com/madan-stack", 
-  linkedin: "https://linkedin.com/in/muhammad-nur-ramadhan",
-  instagram: "https://instagram.com/madan_stack",
-};
 
-export const projects: Project[] = [
-  {
-    id: 1,
-    title: "Katalog Restoran PWA",
-    description: "Aplikasi katalog restoran dengan fitur Progressive Web App (PWA), favorite restaurant (IDB), dan End-to-End Testing.",
-    technologies: ["JavaScript", "PWA", "Webpack", "Jasmine"],
-    imageUrl: "/projects/restaurant.jpg",
-    demoUrl: "https://restaurant-apps.vercel.app", 
-    githubUrl: "https://github.com/madan-stack/restaurant-apps",
-    featured: true,
-  },
-  {
-    id: 2,
-    title: "E-Commerce Dashboard",
-    description: "Platform manajemen produk untuk UMKM dengan fitur CRUD, upload gambar, dan manajemen stok real-time.",
-    technologies: ["Next.js", "TypeScript", "Prisma", "Tailwind"],
-    imageUrl: "/projects/ecommerce.jpg",
-    demoUrl: "https://demo-ecommerce.vercel.app",
-    githubUrl: "https://github.com/madan-stack/ecommerce",
-    featured: true,
-  },
-  {
-    id: 3,
-    title: "Notes App API",
-    description: "RESTful API untuk aplikasi catatan menggunakan Hapi.js dengan fitur autentikasi dan otorisasi.",
-    technologies: ["Node.js", "Hapi.js", "Postman", "EC2"],
-    imageUrl: "/projects/api-project.jpg",
-    githubUrl: "https://github.com/madan-stack/notes-api",
-    featured: false,
-  },
-  {
-    id: 4,
-    title: "Notes App API",
-    description: "RESTful API untuk aplikasi catatan menggunakan Hapi.js dengan fitur autentikasi dan otorisasi.",
-    technologies: ["Node.js", "Hapi.js", "Postman", "EC2"],
-    imageUrl: "/projects/api-project.jpg",
-    githubUrl: "https://github.com/madan-stack/notes-api",
-    featured: false,
-  },
-];
 
-export const certificates: Certificate[] = [
-  {
-    id: 1,
-    name: "Belajar Fundamental Back-End dengan JavaScript",
-    issuer: "Dicoding Indonesia",
-    date: "30 November 2025",
-    url: "https://www.dicoding.com/certificates/0LZ05MN53X65",
-    imageUrl: "/certificates/Fundamental-Back-End.png" 
-  },
-  {
-    id: 2,
-    name: "Belajar Back-End Pemula dengan JavaScript",
-    issuer: "Dicoding Indonesia",
-    date: "27 Oktober 2025",
-    url: "https://www.dicoding.com/certificates/QLZ96654MZ5D",
-    imageUrl: "/certificates/Back-End-Pemula.png"
-  },
-  {
-    id: 3,
-    name: "Belajar Fundamental Aplikasi Web dengan React",
-    issuer: "Dicoding Indonesia",
-    date: "17 September 2025",
-    url: "https://www.dicoding.com/certificates/1OP8JW8VLPQK",
-    imageUrl: "/certificates/Fundamental-Aplikasi-Web.png"
-  },
-  {
-    id: 4,
-    name: "Belajar Membuat Aplikasi Web dengan React",
-    issuer: "Dicoding Indonesia",
-    date: "24 September 2025",
-    url: "https://www.dicoding.com/certificates/JLX15DNRNZ72",
-    imageUrl: "/certificates/Membuat-Aplikasi-Web-dengan-React.png"
-  },
-  {
-    id: 5,
-    name: "Belajar Membuat Front-End Web untuk Pemula",
-    issuer: "Dicoding Indonesia",
-    date: "17 September 2025",
-    url: "https://www.dicoding.com/certificates/L4PQ28R4OZO1",
-    imageUrl: "/certificates/Membuat-Front-End-Web-untuk-Pemula.png"
-  },
-  {
-    id: 6,
-    name: "Belajar Dasar Pemrograman Web",
-    issuer: "Dicoding Indonesia",
-    date: "03 September 2025",
-    url: "https://www.dicoding.com/certificates/0LZ05G573X65",
-    imageUrl: "/certificates/Dasar-Pemrograman-Web.png"
-  },
-  {
-    id: 7,
-    name: "Belajar Dasar Pemrograman JavaScript",
-    issuer: "Dicoding Indonesia",
-    date: "10 September 2025",
-    url: "https://www.dicoding.com/certificates/JMZVV91K3ZN9",
-    imageUrl: "/certificates/Dasar-Pemrograman-JavaScript.png"
-  },
-  {
-    id: 8,
-    name: "Memulai Dasar Pemrograman untuk Menjadi Pengembang Software",
-    issuer: "Dicoding Indonesia",
-    date: "27 Agustus 2025",
-    url: "https://www.dicoding.com/certificates/GRX5JL9KKX0M",
-    imageUrl: "/certificates/Memulai-Dasar-Pemrograman-untuk-Menjadi-Pengembang-Software.png"
-  },
-  {
-    id: 9,
-    name: "Belajar Dasar AI",
-    issuer: "Dicoding Indonesia",
-    date: "08 Oktober 2025",
-    url: "https://www.dicoding.com/certificates/EYX4KV4Q6PDL",
-    imageUrl: "/certificates/Belajar-Dasar-AI.png"
-  },
-];
+const skillIconClassName = "w-6 h-6";
 
-export const skillsData: { row1: SkillItem[]; row2: SkillItem[] } = {
-  row1: [
-    { name: "React", icon: <SiReact className="w-6 h-6 text-[#61DAFB]" /> },
-    { name: "Next.js", icon: <SiNextdotjs className="w-6 h-6 text-black dark:text-white" /> },
-    { name: "Tailwind CSS", icon: <SiTailwindcss className="w-6 h-6 text-[#38BDF8]" /> },
-    { name: "JavaScript", icon: <SiJavascript className="w-6 h-6 text-[#F7DF1E]" /> },
-    { name: "Express.js", icon: <SiExpress className="w-6 h-6 text-[#000000]" /> },
-    { name: "Netlify", icon: <SiNetlify className="w-6 h-6 text-[#000000]" /> },
-    { name: "Railway", icon: <SiRailway className="w-6 h-6 text-[#000000]" /> },
-    
-  ],
-  row2: [
-    { name: "Node.js", icon: <SiNodedotjs className="w-6 h-6 text-[#339933]" /> },
-    { name: "MySQL", icon: <SiMysql className="w-6 h-6 text-[#00758F]" /> },
-    { name: "Git", icon: <SiGit className="w-6 h-6 text-[#F05032]" /> },
-    { name: "Postman", icon: <SiPostman className="w-6 h-6 text-[#FF6C37]" /> },
-    { name: "PostgreSQL", icon: <SiPostgresql className="w-6 h-6 text-[#336791]" /> },
-    { name: "Figma", icon: <SiFigma className="w-6 h-6 text-[#F24E1E]" /> },
-    { name: "Vercel", icon: <SiVercel className="w-6 h-6 text-[#000000]" /> },
-    { name: "Google Gemini", icon: <SiGooglegemini className="w-6 h-6 text-[#000000]" /> },
+function normalizeSkillKey(value?: string | null) {
+  return (value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
-  ],
-};
+export function getSkillIcon(name: string, iconKey?: string | null) {
+  const key = normalizeSkillKey(iconKey || name);
+  const iconMap: Record<string, React.JSX.Element> = {
+    react: <SiReact className={`${skillIconClassName} text-[#61DAFB]`} />,
+    nextjs: <SiNextdotjs className={`${skillIconClassName} text-black dark:text-white`} />,
+    "next-js": <SiNextdotjs className={`${skillIconClassName} text-black dark:text-white`} />,
+    "tailwind-css": <SiTailwindcss className={`${skillIconClassName} text-[#38BDF8]`} />,
+    tailwindcss: <SiTailwindcss className={`${skillIconClassName} text-[#38BDF8]`} />,
+    javascript: <SiJavascript className={`${skillIconClassName} text-[#F7DF1E]`} />,
+    expressjs: <SiExpress className={`${skillIconClassName} text-black dark:text-white`} />,
+    "express-js": <SiExpress className={`${skillIconClassName} text-black dark:text-white`} />,
+    netlify: <SiNetlify className={`${skillIconClassName} text-[#00C7B7]`} />,
+    railway: <SiRailway className={`${skillIconClassName} text-black dark:text-white`} />,
+    nodejs: <SiNodedotjs className={`${skillIconClassName} text-[#339933]`} />,
+    "node-js": <SiNodedotjs className={`${skillIconClassName} text-[#339933]`} />,
+    mysql: <SiMysql className={`${skillIconClassName} text-[#00758F]`} />,
+    git: <SiGit className={`${skillIconClassName} text-[#F05032]`} />,
+    postman: <SiPostman className={`${skillIconClassName} text-[#FF6C37]`} />,
+    postgresql: <SiPostgresql className={`${skillIconClassName} text-[#336791]`} />,
+    figma: <SiFigma className={`${skillIconClassName} text-[#F24E1E]`} />,
+    vercel: <SiVercel className={`${skillIconClassName} text-black dark:text-white`} />,
+    "google-gemini": <SiGooglegemini className={`${skillIconClassName} text-[#8E75B2]`} />,
+  };
+
+  return (
+    iconMap[key] ?? (
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent-primary/10 text-xs font-black text-accent-primary">
+        {name.slice(0, 2).toUpperCase()}
+      </span>
+    )
+  );
+}
+
+export function buildSkillsData(apiSkills: ApiSkill[]) {
+  const sortedSkills = [...apiSkills].sort((left, right) => (left.sortOrder ?? 0) - (right.sortOrder ?? 0));
+  const row1 = sortedSkills
+    .filter((skill) => (skill.group ?? "row1") === "row1")
+    .map((skill) => ({ name: skill.name, icon: getSkillIcon(skill.name, skill.iconKey) }));
+  const row2 = sortedSkills
+    .filter((skill) => (skill.group ?? "row1") !== "row1")
+    .map((skill) => ({ name: skill.name, icon: getSkillIcon(skill.name, skill.iconKey) }));
+
+  return { row1, row2 };
+}
