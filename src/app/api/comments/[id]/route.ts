@@ -33,10 +33,6 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const unauthorized = await requireAdminSession();
-
-  if (unauthorized) return unauthorized;
-
   const { id } = await context.params;
   const body = await parseJsonBody(request);
 

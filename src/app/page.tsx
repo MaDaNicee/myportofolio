@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import Image from "next/image";
 import { motion, AnimatePresence } from 'framer-motion';
 import ProjectCard from '@/components/ProjectCard';
@@ -14,7 +14,7 @@ import ContactForm from '@/components/ContactForm';
 import ScrollScene3D from '@/components/ScrollScene3D';
 import PhotoCard3D from '@/components/PhotoCard3D';
 import Meteors from '@/components/Meteors';
-import { FiEdit3, FiMessageSquare, FiSend, FiTrash2, FiX } from 'react-icons/fi';
+import { FiEdit3, FiMessageSquare, FiSend, FiX } from 'react-icons/fi';
 
 const emptyProfileData: ProfileData = {
   name: "",
@@ -57,6 +57,7 @@ export default function Home() {
   const [editingCommentId, setEditingCommentId] = useState<PortfolioComment["id"] | null>(null);
   const [commentForm, setCommentForm] = useState({ name: "", role: "", message: "" });
   const [isCommentSaving, setIsCommentSaving] = useState(false);
+  const commentFormRef = useRef<HTMLFormElement>(null);
 
   const resetCommentForm = () => {
     setCommentForm({ name: "", role: "", message: "" });
@@ -193,21 +194,12 @@ export default function Home() {
   const handleEditComment = (comment: PortfolioComment) => {
     setEditingCommentId(comment.id);
     setCommentForm({ name: comment.name, role: comment.role, message: comment.message });
-  };
 
-  const handleDeleteComment = async (commentId: PortfolioComment["id"]) => {
-    try {
-      const response = await fetch(`/api/comments/${encodeURIComponent(String(commentId))}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("API komentar belum siap.");
-
-      setCommentItems((currentComments) => currentComments.filter((comment) => comment.id !== commentId));
-      if (editingCommentId === commentId) resetCommentForm();
-    } catch (error) {
-      console.warn("Gagal menghapus komentar melalui API.", error);
-    }
+    window.setTimeout(() => {
+      if (window.innerWidth < 1024) {
+        commentFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 0);
   };
 
   return (
@@ -625,7 +617,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-5xl font-bold mb-4 text-text-light-primary dark:text-text-dark-primary">Komen</h2>
               <div className="w-24 h-1.5 bg-gradient-to-r from-accent-primary to-accent-secondary mx-auto rounded-full mb-6"></div>
               <p className="text-lg text-text-light-secondary dark:text-text-dark-secondary max-w-2xl mx-auto">
-                Kumpulan komentar dinamis yang langsung tersambung ke API, Prisma ORM, dan Neon PostgreSQL.
+                Bagikan pesan, masukan, atau kesanmu tentang portfolio ini. Komentar akan tampil langsung di halaman.
               </p>
             </div>
           </FadeIn>
@@ -665,22 +657,14 @@ export default function Home() {
                           </div>
                         </div>
 
-                        <div className="flex shrink-0 items-center gap-2 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
+                        <div className="relative z-20 flex shrink-0 items-center gap-2 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
                           <button
                             type="button"
                             onClick={() => handleEditComment(comment)}
-                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-light-border/70 bg-white/50 text-text-light-secondary transition-colors hover:border-accent-primary/40 hover:text-accent-primary dark:border-white/10 dark:bg-white/5 dark:text-text-dark-secondary"
+                            className="relative z-20 flex h-12 w-12 touch-manipulation items-center justify-center rounded-2xl border border-light-border/70 bg-white/60 text-text-light-secondary shadow-lg shadow-black/5 transition-all active:scale-95 hover:border-accent-primary/40 hover:text-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary md:h-9 md:w-9 md:rounded-xl"
                             aria-label={`Edit komen dari ${comment.name}`}
                           >
-                            <FiEdit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-light-border/70 bg-white/50 text-text-light-secondary transition-colors hover:border-red-400/50 hover:text-red-500 dark:border-white/10 dark:bg-white/5 dark:text-text-dark-secondary"
-                            aria-label={`Hapus komen dari ${comment.name}`}
-                          >
-                            <FiTrash2 className="h-4 w-4" />
+                            <FiEdit3 className="h-5 w-5 md:h-4 md:w-4" />
                           </button>
                         </div>
                       </div>
@@ -694,6 +678,7 @@ export default function Home() {
 
             <FadeIn delay={0.1}>
               <form
+                ref={commentFormRef}
                 onSubmit={handleCommentSubmit}
                 className="sticky top-8 rounded-[2rem] border border-light-border/70 dark:border-white/10 bg-white/50 dark:bg-black/25 backdrop-blur-2xl p-6 shadow-2xl"
               >
@@ -744,18 +729,18 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isCommentSaving || !commentForm.name.trim() || !commentForm.message.trim()}
-                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-primary to-accent-secondary px-5 text-sm font-bold text-white shadow-xl shadow-accent-primary/25 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                    className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-primary to-accent-secondary px-5 py-4 text-base font-bold leading-none text-white shadow-xl shadow-accent-primary/25 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:flex-1"
                   >
                     <span>{isCommentSaving ? "Menyimpan" : editingCommentId ? "Update" : "Kirim"}</span>
-                    <FiSend className="h-4 w-4" />
+                    <FiSend className="h-5 w-5 shrink-0" />
                   </button>
                   {editingCommentId && (
                     <button
                       type="button"
                       onClick={resetCommentForm}
-                      className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-light-border/70 bg-white/60 px-5 text-sm font-bold text-text-light-primary transition-all hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                      className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-light-border/70 bg-white/60 px-5 py-4 text-base font-bold leading-none text-text-light-primary transition-all hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 sm:w-auto"
                     >
-                      <FiX className="h-4 w-4" />
+                      <FiX className="h-5 w-5 shrink-0" />
                       Batal
                     </button>
                   )}

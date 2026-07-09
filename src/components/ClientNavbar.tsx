@@ -185,13 +185,13 @@ export default function Navbar() {
       </motion.nav>
 
       <motion.nav
-        className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 md:hidden"
+        className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 md:hidden"
         initial={{ y: 90, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
         aria-label="Mobile navigation"
       >
-        <div className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-2xl border border-light-border/60 bg-light-card/90 p-2 shadow-2xl shadow-black/10 backdrop-blur-xl dark:border-white/10 dark:bg-dark-card/90">
+        <div className="flex w-fit max-w-full items-center justify-center gap-0.5 overflow-x-auto rounded-2xl border border-light-border/60 bg-light-card/90 p-1.5 shadow-2xl shadow-black/10 backdrop-blur-xl dark:border-white/10 dark:bg-dark-card/90">
           {navLinks.map((link) => (
             <MobileNavLink
               key={link.name}
@@ -203,7 +203,7 @@ export default function Navbar() {
             />
           ))}
           <div className="ml-1 border-l border-light-border/60 pl-2 dark:border-white/10">
-            <ThemeToggle />
+            <ThemeToggle compact />
           </div>
         </div>
       </motion.nav>
@@ -278,7 +278,7 @@ function MobileNavLink({
       href={href}
       onClick={(event) => scrollToSection(event, href, onNavigate)}
       className={`
-        flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl outline-none transition-all focus-visible:ring-2 focus-visible:ring-accent-primary
+        flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg outline-none transition-all focus-visible:ring-2 focus-visible:ring-accent-primary sm:h-10 sm:w-10
         ${
           isActive
             ? 'bg-accent-primary/15 text-accent-primary'
