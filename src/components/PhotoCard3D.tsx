@@ -124,6 +124,7 @@ export default function PhotoCard3D({ src, alt }: PhotoCard3DProps) {
                 src={src}
                 alt={alt}
                 fill
+                sizes="(min-width: 1024px) 420px, (min-width: 640px) 384px, calc(100vw - 3rem)"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                 priority
               />

@@ -1,6 +1,3 @@
-'use client';
-
-import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { Project } from '@/lib/data';
 import { SiGithub } from 'react-icons/si';
@@ -11,16 +8,9 @@ interface ProjectCardProps {
   index: number;
 }
 
-export default function ProjectCard({ project, index }: ProjectCardProps) {
+export default function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <motion.div
-      // PERBAIKAN: Semua className dijadikan satu baris string
-      className="group relative h-full rounded-2xl overflow-hidden bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-    >
+    <div className="group relative h-full rounded-2xl overflow-hidden bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
       {/* Image Container */}
       <div className="relative h-48 w-full overflow-hidden">
         {/* Overlay saat hover */}
@@ -32,6 +22,7 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
             src={project.imageUrl}
             alt={project.title}
             fill
+            sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
             className="object-cover transition-transform duration-500 group-hover:scale-110"
           />
         ) : (
@@ -98,6 +89,6 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

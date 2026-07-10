@@ -100,6 +100,23 @@ export default function ScrollScene3D() {
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0, 8);
 
+    const getQualitySettings = () => {
+      const width = window.innerWidth;
+      const isMobile = width < 768;
+
+      return {
+        tubeSegments: isMobile ? 160 : 280,
+        tubeRadius: isMobile ? 0.1 : 0.14,
+        radialSegments: isMobile ? 12 : 18,
+        haloDetail: isMobile ? 1 : 2,
+        ringSegments: isMobile ? 96 : 144,
+        particleCount: isMobile ? 120 : 320,
+        maxPixelRatio: isMobile ? 1.15 : 1.75,
+      };
+    };
+
+    const quality = getQualitySettings();
+
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
@@ -107,7 +124,7 @@ export default function ScrollScene3D() {
       preserveDrawingBuffer: process.env.NODE_ENV !== 'production',
     });
     renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, getQualitySettings().maxPixelRatio));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.domElement.setAttribute('aria-hidden', 'true');
     renderer.domElement.dataset.scrollSceneCanvas = 'true';
@@ -123,7 +140,7 @@ export default function ScrollScene3D() {
     fillLight.position.set(-4, -2.5, 4.5);
     scene.add(ambientLight, keyLight, fillLight);
 
-    const infinityGeometry = new THREE.TubeGeometry(new InfinityCurve(), 280, 0.14, 18, true);
+    const infinityGeometry = new THREE.TubeGeometry(new InfinityCurve(), quality.tubeSegments, quality.tubeRadius, quality.radialSegments, true);
     const glassMaterial = new THREE.MeshStandardMaterial({
       color: 0x8b5cf6,
       emissive: 0x3b1368,
@@ -147,7 +164,7 @@ export default function ScrollScene3D() {
     root.add(infinitySymbol, infinityWire);
 
     const halo = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(3.25, 2),
+      new THREE.IcosahedronGeometry(3.25, quality.haloDetail),
       new THREE.MeshBasicMaterial({
         color: 0x7c3aed,
         wireframe: true,
@@ -170,14 +187,14 @@ export default function ScrollScene3D() {
     });
 
     const rings = [1.95, 2.5, 3.05, 3.55].map((radius, index) => {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.018, 8, 144), ringMaterial.clone());
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.018, 8, quality.ringSegments), ringMaterial.clone());
       ring.rotation.x = Math.PI / 2 + index * 0.34;
       ring.rotation.y = index * 0.42;
       root.add(ring);
       return ring;
     });
 
-    const particleCount = 320;
+    const particleCount = quality.particleCount;
     const positions = new Float32Array(particleCount * 3);
     for (let index = 0; index < particleCount; index += 1) {
       const radius = 2.0 + Math.random() * 4.4;
@@ -244,16 +261,21 @@ export default function ScrollScene3D() {
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, getQualitySettings().maxPixelRatio));
       renderer.setSize(window.innerWidth, window.innerHeight);
       updateScrollState();
     };
 
     let animationFrame = 0;
+    let isVisible = !document.hidden;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const clock = new THREE.Clock();
 
     const render = () => {
+      if (!isVisible) {
+        animationFrame = 0;
+        return;
+      }
       const elapsed = clock.getElapsedTime();
       scrollState.current += (scrollState.target - scrollState.current) * 0.075;
       scrollState.velocity *= 0.9;
@@ -298,16 +320,38 @@ export default function ScrollScene3D() {
       animationFrame = window.requestAnimationFrame(render);
     };
 
+    const startRenderLoop = () => {
+      if (animationFrame === 0) {
+        animationFrame = window.requestAnimationFrame(render);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      isVisible = !document.hidden;
+
+      if (isVisible) {
+        startRenderLoop();
+        return;
+      }
+
+      if (animationFrame) {
+        window.cancelAnimationFrame(animationFrame);
+        animationFrame = 0;
+      }
+    };
+
     applyInitialScenePlacement();
-    render();
+    startRenderLoop();
 
     window.addEventListener('scroll', updateScrollState, { passive: true });
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.cancelAnimationFrame(animationFrame);
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
       window.removeEventListener('scroll', updateScrollState);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
 
       root.traverse((object) => {
         const mesh = object as THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>;
