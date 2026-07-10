@@ -240,7 +240,7 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="mt-6 text-base md:text-lg text-text-light-secondary dark:text-text-dark-secondary leading-8 max-w-md mx-auto lg:mx-0"
+                className="mt-6 max-w-md rounded-2xl border border-light-border/70 bg-white/70 px-5 py-4 text-base leading-8 text-text-light-secondary shadow-xl shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-black/45 dark:text-text-dark-primary md:text-lg lg:mx-0"
               >
                 {profile.bio}
               </motion.p>
@@ -278,7 +278,7 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
                   />
                 </h2>
 
-                <p className="mt-5 max-w-sm mx-auto lg:mx-0 text-sm md:text-base leading-7 text-text-light-secondary dark:text-text-dark-secondary">
+                <p className="mt-5 max-w-sm rounded-2xl border border-light-border/70 bg-white/70 px-5 py-4 text-sm leading-7 text-text-light-secondary shadow-xl shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-black/45 dark:text-text-dark-primary md:text-base lg:mx-0">
                   Building responsive interfaces with clean code, interactive details, and a practical fullstack mindset.
                 </p>
 
