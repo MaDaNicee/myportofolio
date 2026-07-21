@@ -1,7 +1,8 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Project } from '@/lib/data';
 import { SiGithub } from 'react-icons/si';
-import { FiExternalLink } from 'react-icons/fi'; // Pastikan install: npm install react-icons
+import { FiArrowRight, FiExternalLink } from 'react-icons/fi';
 
 interface ProjectCardProps {
   project: Project;
@@ -10,13 +11,16 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <div className="group relative h-full rounded-2xl overflow-hidden bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-      {/* Image Container */}
+    <article className="group relative h-full overflow-hidden rounded-2xl border border-light-border bg-light-card transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl dark:border-dark-border dark:bg-dark-card">
+      <Link
+        href={`/projects/${project.id}`}
+        className="absolute inset-0 z-20 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary"
+        aria-label={`Lihat detail project ${project.title}`}
+      />
+
       <div className="relative h-48 w-full overflow-hidden">
-        {/* Overlay saat hover */}
-        <div className="absolute inset-0 bg-light-card/70 dark:bg-dark-card/70 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-center justify-center gap-4" />
-        
-        {/* Gambar Project */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center gap-4 bg-light-card/70 opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-dark-card/70" />
+
         {project.imageUrl ? (
           <Image
             src={project.imageUrl}
@@ -33,15 +37,15 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </div>
         )}
 
-        {/* Tombol Action (Muncul saat Hover) */}
-        <div className="absolute inset-0 z-20 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute inset-0 z-30 flex items-center justify-center gap-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
           {project.demoUrl && (
             <a
               href={project.demoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 rounded-full bg-accent-primary text-white shadow-lg hover:scale-110 transition-transform"
+              className="rounded-full bg-accent-primary p-3 text-white shadow-lg transition-transform hover:scale-110"
               title="View Demo"
+              aria-label={`Buka demo ${project.title}`}
             >
               <FiExternalLink size={20} />
             </a>
@@ -51,44 +55,47 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               href={project.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-3 rounded-full bg-dark-surface text-white shadow-lg hover:scale-110 transition-transform"
+              className="rounded-full bg-dark-surface p-3 text-white shadow-lg transition-transform hover:scale-110"
               title="View Code"
+              aria-label={`Buka source code ${project.title}`}
             >
               <SiGithub size={20} />
             </a>
           )}
         </div>
 
-        {/* Badge Featured */}
         {project.featured && (
-          <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-medium bg-accent-primary text-white shadow-lg z-20">
+          <div className="pointer-events-none absolute right-4 top-4 z-30 rounded-full bg-accent-primary px-3 py-1 text-xs font-medium text-white shadow-lg">
             Featured
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-6 flex flex-col h-[calc(100%-12rem)]">
-        <h3 className="text-xl font-bold mb-2 text-text-light-primary dark:text-text-dark-primary group-hover:text-accent-primary transition-colors">
+      <div className="flex h-[calc(100%-12rem)] flex-col p-6">
+        <h3 className="mb-2 text-xl font-bold text-text-light-primary transition-colors group-hover:text-accent-primary dark:text-text-dark-primary">
           {project.title}
         </h3>
-        
-        <p className="text-text-light-secondary dark:text-text-dark-secondary mb-4 line-clamp-3 text-sm flex-grow">
-          {project.description}
+
+        <p className="mb-4 line-clamp-3 flex-grow text-sm text-text-light-secondary dark:text-text-dark-secondary">
+          {project.summary || project.description}
         </p>
 
-        {/* Tech Stack Tags */}
-        <div className="flex flex-wrap gap-2 mt-auto">
-          {project.technologies.map((tech, i) => (
+        <div className="mt-auto flex flex-wrap gap-2">
+          {project.technologies.map((tech) => (
             <span
-              key={i}
-              className="px-3 py-1 text-xs rounded-full bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border text-text-light-secondary dark:text-text-dark-secondary"
+              key={tech}
+              className="rounded-full border border-light-border bg-light-surface px-3 py-1 text-xs text-text-light-secondary dark:border-dark-border dark:bg-dark-surface dark:text-text-dark-secondary"
             >
               {tech}
             </span>
           ))}
         </div>
+
+        <div className="mt-5 flex items-center gap-2 text-sm font-bold text-accent-primary">
+          <span>Lihat Detail</span>
+          <FiArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+        </div>
       </div>
-    </div>
+    </article>
   );
 }

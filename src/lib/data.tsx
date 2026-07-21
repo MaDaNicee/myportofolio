@@ -11,7 +11,16 @@ import {
 export interface Project {
   id: string | number;
   title: string;
+  summary?: string;
   description: string;
+  role?: string;
+  projectType?: string;
+  period?: string;
+  status?: string;
+  problem?: string;
+  solution?: string;
+  outcome?: string;
+  highlights: string[];
   technologies: string[];
   imageUrl?: string | null;
   demoUrl?: string;

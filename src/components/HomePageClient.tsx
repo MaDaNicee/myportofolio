@@ -3,7 +3,7 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from "next/image";
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import ProjectCard from '@/components/ProjectCard';
 import SkillSlider from '@/components/SkillSlider';
 import FadeIn from '@/components/FadeIn';
@@ -11,7 +11,7 @@ import MagneticButton from '@/components/MagneticButton';
 import DecryptedText from '@/components/react-bits/DecryptedText'; 
 import ShinyText from '@/components/react-bits/ShinyText';       
 import { buildSkillsData, type ApiSkill, type Certificate, type Experience, type PortfolioComment, type ProfileData, type Project } from '@/lib/data';
-import { FiEdit3, FiMessageSquare, FiSend, FiX } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiEdit3, FiMessageCircle, FiMessageSquare, FiPlus, FiSend, FiX } from 'react-icons/fi';
 
 const DynamicScrollScene3D = dynamic(() => import('@/components/ScrollScene3D'), {
   ssr: false,
@@ -100,11 +100,53 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
   const [editingCommentId, setEditingCommentId] = useState<PortfolioComment["id"] | null>(null);
   const [commentForm, setCommentForm] = useState({ name: "", role: "", message: "" });
   const [isCommentSaving, setIsCommentSaving] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [activeCommentIndex, setActiveCommentIndex] = useState(0);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeChatTopic, setActiveChatTopic] = useState("project");
   const commentFormRef = useRef<HTMLFormElement>(null);
+  const isCommentSliderPausedRef = useRef(false);
+  const chatPrompts = useMemo(
+    () => [
+      {
+        id: "project",
+        label: "Project baru",
+        message: `Halo ${profile.nickname || profile.name}, saya ingin diskusi project web.`,
+      },
+      {
+        id: "portfolio",
+        label: "Portfolio",
+        message: `Halo ${profile.nickname || profile.name}, saya baru melihat portfolio kamu dan ingin bertanya lebih lanjut.`,
+      },
+      {
+        id: "collab",
+        label: "Kolaborasi",
+        message: `Halo ${profile.nickname || profile.name}, saya tertarik untuk kolaborasi.`,
+      },
+    ],
+    [profile.name, profile.nickname],
+  );
+  const activeChatPrompt = chatPrompts.find((prompt) => prompt.id === activeChatTopic) ?? chatPrompts[0];
+  const whatsappNumber = profile.phone.replace(/\D/g, "");
+  const whatsappHref = whatsappNumber
+    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(activeChatPrompt.message)}`
+    : "#contact";
 
   const resetCommentForm = () => {
     setCommentForm({ name: "", role: "", message: "" });
     setEditingCommentId(null);
+  };
+
+  const openAddCommentModal = () => {
+    resetCommentForm();
+    setIsCommentModalOpen(true);
+  };
+
+  const closeCommentModal = () => {
+    if (isCommentSaving) return;
+
+    resetCommentForm();
+    setIsCommentModalOpen(false);
   };
 
   const formatCommentDate = (value: string) => {
@@ -132,8 +174,8 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
 
     setIsCommentSaving(true);
 
-    if (editingCommentId) {
-      try {
+    try {
+      if (editingCommentId) {
         const response = await fetch(`/api/comments/${encodeURIComponent(String(editingCommentId))}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -147,46 +189,98 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
         setCommentItems((currentComments) =>
           currentComments.map((comment) => (comment.id === editingCommentId ? updatedComment : comment)),
         );
-      } catch (error) {
-        console.warn("Gagal memperbarui komentar melalui API.", error);
-      } finally {
-        setIsCommentSaving(false);
-        resetCommentForm();
+      } else {
+        const response = await fetch("/api/comments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) throw new Error("API komentar belum siap.");
+
+        const createdComment = (await response.json()) as PortfolioComment;
+
+        setCommentItems((currentComments) => [createdComment, ...currentComments]);
+        setActiveCommentIndex(0);
       }
 
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error("API komentar belum siap.");
-
-      const createdComment = (await response.json()) as PortfolioComment;
-
-      setCommentItems((currentComments) => [createdComment, ...currentComments]);
+      resetCommentForm();
+      setIsCommentModalOpen(false);
     } catch (error) {
-      console.warn("Gagal menyimpan komentar melalui API.", error);
+      console.warn(editingCommentId ? "Gagal memperbarui komentar melalui API." : "Gagal menyimpan komentar melalui API.", error);
     } finally {
       setIsCommentSaving(false);
-      resetCommentForm();
     }
   };
 
   const handleEditComment = (comment: PortfolioComment) => {
     setEditingCommentId(comment.id);
     setCommentForm({ name: comment.name, role: comment.role, message: comment.message });
-
-    window.setTimeout(() => {
-      if (window.innerWidth < 1024) {
-        commentFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 0);
+    setIsCommentModalOpen(true);
   };
+
+  const scrollCommentSlider = (direction: "left" | "right") => {
+    setActiveCommentIndex((currentIndex) => {
+      if (commentItems.length <= 1) return 0;
+
+      return direction === "right"
+        ? (currentIndex - 1 + commentItems.length) % commentItems.length
+        : (currentIndex + 1) % commentItems.length;
+    });
+  };
+
+  const setCommentSliderPaused = (isPaused: boolean) => {
+    isCommentSliderPausedRef.current = isPaused;
+  };
+
+  const commentCarouselCards = useMemo(() => {
+    const totalComments = commentItems.length;
+
+    if (!totalComments) return [];
+
+    const normalizedIndex = ((activeCommentIndex % totalComments) + totalComments) % totalComments;
+    const getComment = (offset: number) => commentItems[(normalizedIndex + offset + totalComments) % totalComments];
+
+    if (totalComments === 1) {
+      return [{ comment: getComment(0), slot: "center" as const }];
+    }
+
+    if (totalComments === 2) {
+      return [
+        { comment: getComment(0), slot: "center" as const },
+        { comment: getComment(1), slot: "right" as const },
+      ];
+    }
+
+    return [
+      { comment: getComment(-1), slot: "left" as const },
+      { comment: getComment(0), slot: "center" as const },
+      { comment: getComment(1), slot: "right" as const },
+    ];
+  }, [activeCommentIndex, commentItems]);
+
+  useEffect(() => {
+    setActiveCommentIndex((currentIndex) => {
+      if (!commentItems.length) return 0;
+
+      return ((currentIndex % commentItems.length) + commentItems.length) % commentItems.length;
+    });
+  }, [commentItems.length]);
+
+  useEffect(() => {
+    if (commentItems.length <= 1) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+
+    const intervalId = window.setInterval(() => {
+      if (isCommentSliderPausedRef.current || isCommentModalOpen) return;
+
+      setActiveCommentIndex((currentIndex) => (currentIndex - 1 + commentItems.length) % commentItems.length);
+    }, 3300);
+
+    return () => window.clearInterval(intervalId);
+  }, [commentItems.length, isCommentModalOpen]);
 
   return (
     <main className="min-h-screen overflow-hidden relative transition-colors duration-300">
@@ -609,130 +703,153 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.62fr)] gap-8 items-start">
-            <div className="space-y-4">
-              {commentItems.length === 0 ? (
-                <FadeIn>
-                  <div className="rounded-3xl border border-dashed border-light-border dark:border-white/10 bg-white/30 dark:bg-black/20 backdrop-blur-xl p-8 text-center text-text-light-secondary dark:text-text-dark-secondary">
-                    Belum ada komen.
-                  </div>
-                </FadeIn>
-              ) : (
-                commentItems.map((comment, index) => (
-                  <FadeIn key={comment.id} delay={Math.min(index, 6) * 0.04}>
-                    <motion.article
-                      className="group rounded-3xl border border-light-border/70 dark:border-white/10 bg-white/40 dark:bg-black/25 backdrop-blur-xl p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-accent-primary/30 hover:shadow-2xl"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary text-sm font-black text-white shadow-lg shadow-accent-primary/25">
-                            {comment.name
-                              .split(" ")
-                              .slice(0, 2)
-                              .map((part) => part[0])
-                              .join("")}
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-text-light-primary dark:text-text-dark-primary">{comment.name}</h3>
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-text-light-secondary dark:text-text-dark-secondary">
-                              <span className="rounded-full border border-light-border/70 bg-white/50 px-2.5 py-1 dark:border-white/10 dark:bg-white/5">
-                                {comment.role}
-                              </span>
-                              <span>{formatCommentDate(comment.createdAt)}</span>
-                            </div>
-                          </div>
-                        </div>
+          <div className="relative">
+            <div className="mb-6 flex flex-col items-center gap-4 rounded-[2rem] border border-light-border/70 bg-white/45 p-4 text-center shadow-xl shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-black/25 md:flex-row md:text-left md:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.16em] text-accent-primary">Komentar Terbaru</p>
+                <p className="mt-1 text-sm font-semibold text-text-light-secondary dark:text-text-dark-secondary">
+                  {commentItems.length} pesan dari pengunjung
+                </p>
+              </div>
 
-                        <div className="relative z-20 flex shrink-0 items-center gap-2 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
-                          <button
-                            type="button"
-                            onClick={() => handleEditComment(comment)}
-                            className="relative z-20 flex h-12 w-12 touch-manipulation items-center justify-center rounded-2xl border border-light-border/70 bg-white/60 text-text-light-secondary shadow-lg shadow-black/5 transition-all active:scale-95 hover:border-accent-primary/40 hover:text-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary md:h-9 md:w-9 md:rounded-xl"
-                            aria-label={`Edit komen dari ${comment.name}`}
-                          >
-                            <FiEdit3 className="h-5 w-5 md:h-4 md:w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <p className="mt-5 leading-8 text-text-light-secondary dark:text-text-dark-secondary">{comment.message}</p>
-                    </motion.article>
-                  </FadeIn>
-                ))
-              )}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={openAddCommentModal}
+                  className="flex h-11 min-w-[170px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-primary to-accent-secondary px-5 text-sm font-bold text-white shadow-xl shadow-accent-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-accent-primary/40"
+                >
+                  <FiPlus className="h-4 w-4" />
+                  Tambah Komen
+                </button>
+              </div>
             </div>
 
-            <FadeIn delay={0.1}>
-              <form
-                ref={commentFormRef}
-                onSubmit={handleCommentSubmit}
-                className="sticky top-8 rounded-[2rem] border border-light-border/70 dark:border-white/10 bg-white/50 dark:bg-black/25 backdrop-blur-2xl p-6 shadow-2xl"
+            {commentItems.length === 0 ? (
+              <FadeIn>
+                <div className="rounded-3xl border border-dashed border-light-border bg-white/30 p-8 text-center text-text-light-secondary backdrop-blur-xl dark:border-white/10 dark:bg-black/20 dark:text-text-dark-secondary">
+                  Belum ada komen.
+                </div>
+              </FadeIn>
+            ) : (
+              <div
+                className="relative overflow-hidden rounded-[2.5rem] border border-light-border/70 bg-white/35 px-0 py-8 shadow-2xl shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-black/20 sm:px-6 md:px-10"
+                onMouseEnter={() => setCommentSliderPaused(true)}
+                onMouseLeave={() => setCommentSliderPaused(false)}
+                onFocusCapture={() => setCommentSliderPaused(true)}
+                onBlurCapture={() => setCommentSliderPaused(false)}
+                onTouchStart={() => setCommentSliderPaused(true)}
+                onTouchEnd={() => setCommentSliderPaused(false)}
               >
-                <div className="mb-6 flex items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-2xl font-bold text-text-light-primary dark:text-text-dark-primary">
-                      {editingCommentId ? "Edit Komen" : "Tambah Komen"}
-                    </h3>
-                    <p className="mt-1 text-sm text-text-light-secondary dark:text-text-dark-secondary">
-                      Tersambung ke API saat DATABASE_URL Neon sudah aktif.
-                    </p>
-                  </div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
-                    <FiMessageSquare className="h-6 w-6" />
-                  </div>
+                <div aria-hidden="true" className="absolute inset-x-10 top-8 h-px bg-gradient-to-r from-transparent via-accent-primary/40 to-transparent" />
+                <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-primary/10 blur-3xl dark:bg-accent-primary/20" />
+                <div aria-hidden="true" className="absolute -right-24 bottom-0 h-64 w-64 rounded-full bg-accent-secondary/10 blur-3xl" />
+
+                <button
+                  type="button"
+                  onClick={() => scrollCommentSlider("left")}
+                  disabled={commentItems.length <= 1}
+                  className="absolute left-3 top-1/2 z-40 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-2xl border border-light-border/70 bg-white/80 text-text-light-secondary shadow-2xl shadow-black/10 backdrop-blur-xl transition-all hover:-translate-x-0.5 hover:border-accent-primary/40 hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-black/60 dark:text-text-dark-secondary md:left-6 md:h-14 md:w-14 md:rounded-3xl"
+                  aria-label="Komentar sebelumnya"
+                >
+                  <FiChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollCommentSlider("right")}
+                  disabled={commentItems.length <= 1}
+                  className="absolute right-3 top-1/2 z-40 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-2xl border border-light-border/70 bg-white/80 text-text-light-secondary shadow-2xl shadow-black/10 backdrop-blur-xl transition-all hover:translate-x-0.5 hover:border-accent-primary/40 hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-black/60 dark:text-text-dark-secondary md:right-6 md:h-14 md:w-14 md:rounded-3xl"
+                  aria-label="Komentar berikutnya"
+                >
+                  <FiChevronRight className="h-6 w-6" />
+                </button>
+
+                <div className="relative mx-auto h-[430px] max-w-6xl [perspective:1400px] sm:h-[400px] md:h-[380px]">
+                  <AnimatePresence initial={false} mode="popLayout">
+                    {commentCarouselCards.map(({ comment, slot }) => {
+                      const isCenter = slot === "center";
+                      const leftPosition = slot === "left" ? "29%" : slot === "right" ? "71%" : "50%";
+
+                      return (
+                        <motion.article
+                          key={comment.id}
+                          initial={{ left: "86%", x: "-50%", y: "-50%", scale: 0.72, rotateY: 24, opacity: 0 }}
+                          animate={{
+                            left: leftPosition,
+                            x: "-50%",
+                            y: "-50%",
+                            scale: isCenter ? 1 : 0.82,
+                            rotateY: slot === "left" ? -22 : slot === "right" ? 22 : 0,
+                            rotateZ: slot === "left" ? -2 : slot === "right" ? 2 : 0,
+                            opacity: isCenter ? 1 : 0.48,
+                            filter: isCenter ? "blur(0px)" : "blur(1.1px)",
+                          }}
+                          exit={{ left: "12%", x: "-50%", y: "-50%", scale: 0.72, rotateY: -24, opacity: 0 }}
+                          transition={{ type: "spring", stiffness: 150, damping: 24, mass: 0.95 }}
+                          className={`absolute top-1/2 flex min-h-[330px] w-[min(86vw,500px)] flex-col justify-between overflow-hidden rounded-[2rem] border p-6 backdrop-blur-2xl md:min-h-[310px] ${isCenter ? "border-accent-primary/35 bg-white/75 shadow-2xl shadow-accent-primary/20 dark:bg-black/55" : "border-light-border/60 bg-white/45 shadow-xl shadow-black/5 dark:border-white/10 dark:bg-black/30"}`}
+                          style={{ transformStyle: "preserve-3d", zIndex: isCenter ? 30 : 10, pointerEvents: isCenter ? "auto" : "none" }}
+                          aria-hidden={!isCenter}
+                        >
+                          <motion.div
+                            aria-hidden="true"
+                            className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-accent-primary/20 blur-3xl"
+                            animate={isCenter ? { scale: [1, 1.14, 1], opacity: [0.55, 0.9, 0.55] } : { scale: 1, opacity: 0.35 }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                          />
+                          <div aria-hidden="true" className="absolute -bottom-20 left-8 h-32 w-32 rounded-full bg-accent-secondary/10 blur-3xl" />
+                          <div aria-hidden="true" className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-70" />
+
+                          <div className="relative z-10 flex items-start justify-between gap-4">
+                            <div className="flex min-w-0 items-start gap-4">
+                              <div className={`${isCenter ? "h-14 w-14 rounded-[1.35rem]" : "h-12 w-12 rounded-2xl"} flex shrink-0 items-center justify-center bg-gradient-to-br from-accent-primary to-accent-secondary text-sm font-black text-white shadow-lg shadow-accent-primary/25`}>
+                                {getProfileInitials(comment.name)}
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className={`${isCenter ? "text-xl" : "text-lg"} truncate font-bold text-text-light-primary dark:text-text-dark-primary`}>{comment.name}</h3>
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-text-light-secondary dark:text-text-dark-secondary">
+                                  <span className="max-w-[160px] truncate rounded-full border border-light-border/70 bg-white/60 px-2.5 py-1 dark:border-white/10 dark:bg-white/5">
+                                    {comment.role}
+                                  </span>
+                                  <span>{formatCommentDate(comment.createdAt)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {isCenter ? (
+                              <button
+                                type="button"
+                                onClick={() => handleEditComment(comment)}
+                                className="relative z-20 flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-2xl border border-light-border/70 bg-white/70 text-text-light-secondary shadow-lg shadow-black/5 transition-all active:scale-95 hover:border-accent-primary/40 hover:text-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary md:h-10 md:w-10 md:rounded-xl"
+                                aria-label={`Edit komen dari ${comment.name}`}
+                              >
+                                <FiEdit3 className="h-5 w-5 md:h-4 md:w-4" />
+                              </button>
+                            ) : null}
+                          </div>
+
+                          <p className={`relative z-10 mt-7 leading-8 text-text-light-secondary dark:text-text-dark-secondary ${isCenter ? "line-clamp-5" : "line-clamp-4"}`}>{comment.message}</p>
+                        </motion.article>
+                      );
+                    })}
+                  </AnimatePresence>
                 </div>
 
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    value={commentForm.name}
-                    onChange={(event) => setCommentForm((form) => ({ ...form, name: event.target.value }))}
-                    placeholder="Nama"
-                    aria-label="Nama"
-                    required
-                    className="w-full rounded-2xl border border-light-border/70 bg-white/70 px-4 py-3 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-accent-primary dark:border-white/10 dark:bg-white/5 dark:text-text-dark-primary"
-                  />
-                  <input
-                    type="text"
-                    value={commentForm.role}
-                    onChange={(event) => setCommentForm((form) => ({ ...form, role: event.target.value }))}
-                    placeholder="Role atau asal"
-                    aria-label="Role atau asal"
-                    className="w-full rounded-2xl border border-light-border/70 bg-white/70 px-4 py-3 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-accent-primary dark:border-white/10 dark:bg-white/5 dark:text-text-dark-primary"
-                  />
-                  <textarea
-                    value={commentForm.message}
-                    onChange={(event) => setCommentForm((form) => ({ ...form, message: event.target.value }))}
-                    placeholder="Tulis komen"
-                    aria-label="Tulis komen"
-                    required
-                    rows={5}
-                    className="w-full resize-none rounded-2xl border border-light-border/70 bg-white/70 px-4 py-3 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-accent-primary dark:border-white/10 dark:bg-white/5 dark:text-text-dark-primary"
-                  />
-                </div>
+                <div className="mt-2 flex justify-center gap-2">
+                  {commentItems.map((comment, index) => {
+                    const isActive = index === activeCommentIndex;
 
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="submit"
-                    disabled={isCommentSaving || !commentForm.name.trim() || !commentForm.message.trim()}
-                    className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-primary to-accent-secondary px-5 py-4 text-base font-bold leading-none text-white shadow-xl shadow-accent-primary/25 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:flex-1"
-                  >
-                    <span>{isCommentSaving ? "Menyimpan" : editingCommentId ? "Update" : "Kirim"}</span>
-                    <FiSend className="h-5 w-5 shrink-0" />
-                  </button>
-                  {editingCommentId && (
-                    <button
-                      type="button"
-                      onClick={resetCommentForm}
-                      className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-light-border/70 bg-white/60 px-5 py-4 text-base font-bold leading-none text-text-light-primary transition-all hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 sm:w-auto"
-                    >
-                      <FiX className="h-5 w-5 shrink-0" />
-                      Batal
-                    </button>
-                  )}
+                    return (
+                      <button
+                        key={comment.id}
+                        type="button"
+                        onClick={() => setActiveCommentIndex(index)}
+                        className={`h-2.5 rounded-full transition-all ${isActive ? "w-8 bg-accent-primary shadow-lg shadow-accent-primary/30" : "w-2.5 bg-text-light-muted/40 hover:bg-accent-primary/50 dark:bg-white/20"}`}
+                        aria-label={`Tampilkan komen ${index + 1}`}
+                      />
+                    );
+                  })}
                 </div>
-              </form>
-            </FadeIn>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -781,6 +898,239 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
            <p>© {initialData.currentYear} {profile.name}. All rights reserved.</p>
         </div>
       </footer>
+
+      <div className="fixed bottom-4 right-4 z-[80] flex w-[calc(100vw-2rem)] max-w-sm flex-col items-end md:bottom-8 md:right-8">
+        <AnimatePresence>
+          {isChatOpen ? (
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.96 }}
+              transition={{ duration: 0.28, ease: [0.21, 0.47, 0.32, 0.98] }}
+              className="mb-4 max-h-[calc(100vh-7rem)] w-full overflow-y-auto overflow-x-hidden rounded-[2rem] border border-light-border/70 bg-white/85 shadow-2xl shadow-black/20 backdrop-blur-2xl dark:border-white/10 dark:bg-black/80 md:max-h-[calc(100vh-8rem)]"
+            >
+              <div className="relative overflow-hidden border-b border-light-border/60 p-4 dark:border-white/10">
+                <div aria-hidden="true" className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-accent-primary/25 blur-3xl" />
+                <div className="relative flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary/25">
+                      <FiMessageCircle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-text-light-primary dark:text-text-dark-primary">Madan Chat</p>
+                      <p className="mt-0.5 flex items-center gap-2 text-xs font-semibold text-text-light-secondary dark:text-text-dark-secondary">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
+                        Online via WhatsApp
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsChatOpen(false)}
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-light-border/70 bg-white/60 text-text-light-secondary transition-colors hover:text-red-500 dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary"
+                    aria-label="Tutup chat"
+                  >
+                    <FiX className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
+                    <FiMessageCircle className="h-4 w-4" />
+                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.08, duration: 0.25 }}
+                    className="rounded-2xl rounded-tl-sm border border-light-border/70 bg-white/70 px-4 py-3 text-sm leading-6 text-text-light-secondary shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary"
+                  >
+                    Halo, aku siap bantu arahkan obrolan ke WhatsApp.
+                  </motion.div>
+                </div>
+
+                <div className="ml-11 rounded-2xl border border-light-border/70 bg-light-surface/70 p-3 dark:border-white/10 dark:bg-white/5">
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-accent-primary">Pilih topik</p>
+                  <div className="flex flex-wrap gap-2">
+                    {chatPrompts.map((prompt) => (
+                      <button
+                        key={prompt.id}
+                        type="button"
+                        onClick={() => setActiveChatTopic(prompt.id)}
+                        className={`rounded-full border px-3 py-2 text-xs font-bold transition-all ${activeChatTopic === prompt.id ? "border-accent-primary bg-accent-primary text-white shadow-lg shadow-accent-primary/25" : "border-light-border/70 bg-white/70 text-text-light-secondary hover:border-accent-primary/40 hover:text-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary"}`}
+                      >
+                        {prompt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <motion.div
+                  key={activeChatPrompt.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22 }}
+                  className="ml-11 rounded-2xl rounded-br-sm bg-gradient-to-r from-accent-primary to-accent-secondary px-4 py-3 text-sm font-semibold leading-6 text-white shadow-xl shadow-accent-primary/20"
+                >
+                  {activeChatPrompt.message}
+                </motion.div>
+
+                <div className="ml-11 flex items-center gap-1.5 text-accent-primary">
+                  {[0, 1, 2].map((dot) => (
+                    <motion.span
+                      key={dot}
+                      className="h-1.5 w-1.5 rounded-full bg-current"
+                      animate={{ y: [0, -4, 0], opacity: [0.45, 1, 0.45] }}
+                      transition={{ duration: 0.9, repeat: Infinity, delay: dot * 0.12 }}
+                    />
+                  ))}
+                </div>
+
+                <a
+                  href={whatsappHref}
+                  target={whatsappNumber ? "_blank" : undefined}
+                  rel={whatsappNumber ? "noopener noreferrer" : undefined}
+                  className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-5 py-3 text-sm font-black text-white shadow-xl shadow-emerald-500/25 transition-all hover:-translate-y-0.5 hover:bg-[#1fb457]"
+                >
+                  <span>{whatsappNumber ? "Lanjut ke WhatsApp" : "Buka Kontak"}</span>
+                  <FiSend className="h-4 w-4" />
+                </a>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        <motion.button
+          type="button"
+          onClick={() => setIsChatOpen((current) => !current)}
+          className="group relative flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-accent-primary to-accent-secondary text-white shadow-2xl shadow-accent-primary/35 outline-none ring-1 ring-white/20 transition-shadow hover:shadow-accent-primary/50"
+          aria-label={isChatOpen ? "Tutup chatbot" : "Buka chatbot WhatsApp"}
+          animate={isChatOpen ? { y: 0 } : { y: [0, -5, 0] }}
+          transition={isChatOpen ? { duration: 0.2 } : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {!isChatOpen ? (
+            <motion.span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-3xl bg-accent-primary/30"
+              animate={{ scale: [1, 1.35], opacity: [0.55, 0] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+            />
+          ) : null}
+          <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
+            {isChatOpen ? <FiX className="h-6 w-6" /> : <FiMessageCircle className="h-6 w-6" />}
+          </span>
+          {!isChatOpen ? (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-white" />
+            </span>
+          ) : null}
+        </motion.button>
+      </div>
+
+      <AnimatePresence>
+        {isCommentModalOpen ? (
+          <motion.div
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeCommentModal}
+          >
+            <motion.form
+              ref={commentFormRef}
+              onSubmit={handleCommentSubmit}
+              initial={{ opacity: 0, y: 36, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.96 }}
+              transition={{ duration: 0.32, ease: [0.21, 0.47, 0.32, 0.98] }}
+              onClick={(event) => event.stopPropagation()}
+              className="relative w-full max-w-xl overflow-hidden rounded-[2rem] border border-light-border/70 bg-white/85 p-6 shadow-2xl shadow-black/20 backdrop-blur-2xl dark:border-white/10 dark:bg-black/80"
+            >
+              <div aria-hidden="true" className="absolute -right-20 -top-20 h-44 w-44 rounded-full bg-accent-primary/20 blur-3xl" />
+              <div aria-hidden="true" className="absolute -bottom-24 left-8 h-44 w-44 rounded-full bg-accent-secondary/15 blur-3xl" />
+
+              <div className="relative z-10 mb-6 flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary shadow-lg shadow-accent-primary/10 dark:bg-accent-primary/15">
+                    <FiMessageSquare className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-primary">Komentar</p>
+                    <h3 className="mt-2 text-2xl font-black text-text-light-primary dark:text-text-dark-primary">
+                      {editingCommentId ? "Edit Komen" : "Tambah Komen"}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-text-light-secondary dark:text-text-dark-secondary">
+                      {editingCommentId ? "Rapikan pesanmu sebelum tampil lagi." : "Tinggalkan pesan singkat untuk portfolio ini."}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeCommentModal}
+                  disabled={isCommentSaving}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-light-border/70 bg-white/70 text-text-light-secondary transition-all hover:border-red-400/50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary"
+                  aria-label="Tutup form komentar"
+                >
+                  <FiX className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="relative z-10 space-y-4">
+                <input
+                  type="text"
+                  value={commentForm.name}
+                  onChange={(event) => setCommentForm((form) => ({ ...form, name: event.target.value }))}
+                  placeholder="Nama"
+                  aria-label="Nama"
+                  required
+                  className="w-full rounded-2xl border border-light-border/70 bg-white/75 px-4 py-3 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-primary"
+                />
+                <input
+                  type="text"
+                  value={commentForm.role}
+                  onChange={(event) => setCommentForm((form) => ({ ...form, role: event.target.value }))}
+                  placeholder="Role atau asal"
+                  aria-label="Role atau asal"
+                  className="w-full rounded-2xl border border-light-border/70 bg-white/75 px-4 py-3 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-primary"
+                />
+                <textarea
+                  value={commentForm.message}
+                  onChange={(event) => setCommentForm((form) => ({ ...form, message: event.target.value }))}
+                  placeholder="Tulis komen"
+                  aria-label="Tulis komen"
+                  required
+                  rows={5}
+                  className="w-full resize-none rounded-2xl border border-light-border/70 bg-white/75 px-4 py-3 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-primary"
+                />
+              </div>
+
+              <div className="relative z-10 mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="submit"
+                  disabled={isCommentSaving || !commentForm.name.trim() || !commentForm.message.trim()}
+                  className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-primary to-accent-secondary px-5 py-4 text-base font-bold leading-none text-white shadow-xl shadow-accent-primary/25 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                  <span>{isCommentSaving ? "Menyimpan" : editingCommentId ? "Update" : "Kirim"}</span>
+                  <FiSend className="h-5 w-5 shrink-0" />
+                </button>
+                <button
+                  type="button"
+                  onClick={closeCommentModal}
+                  disabled={isCommentSaving}
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-light-border/70 bg-white/70 px-5 py-4 text-base font-bold leading-none text-text-light-primary transition-all hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+                >
+                  <FiX className="h-5 w-5 shrink-0" />
+                  Batal
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <DynamicCertificateModal
         certificate={selectedCertificate}

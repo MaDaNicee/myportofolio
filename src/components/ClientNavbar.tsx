@@ -34,6 +34,8 @@ function scrollToSection(
   href: string,
   onNavigate?: (sectionId: string) => void,
 ) {
+  if (!href.startsWith('#')) return;
+
   event.preventDefault();
   const sectionId = href.substring(1);
   onNavigate?.(sectionId);
@@ -43,6 +45,7 @@ function scrollToSection(
 export default function Navbar() {
   const pathname = usePathname();
   const isAdminPath = pathname.startsWith('/admin');
+  const isHomePath = pathname === '/';
   const [activeSection, setActiveSection] = useState('home');
   const [profileName, setProfileName] = useState('');
 
@@ -139,8 +142,8 @@ export default function Navbar() {
 
           <div className="relative flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-[1.35rem] p-2">
             <a
-              href="#home"
-              onClick={(event) => scrollToSection(event, '#home', setActiveSection)}
+              href={isHomePath ? '#home' : '/#home'}
+              onClick={(event) => scrollToSection(event, isHomePath ? '#home' : '/#home', setActiveSection)}
               className="flex h-10 items-center rounded-xl px-1 text-left outline-none transition-colors hover:bg-accent-primary/5 focus-visible:ring-2 focus-visible:ring-accent-primary"
               aria-label={brandLabel}
               title={brandLabel}
@@ -159,7 +162,7 @@ export default function Navbar() {
               {navLinks.map((link) => (
                 <NavLink
                   key={link.name}
-                  href={link.href}
+                  href={isHomePath ? link.href : `/${link.href}`}
                   icon={link.icon}
                   isActive={activeSection === link.href.substring(1)}
                   onNavigate={setActiveSection}
@@ -195,7 +198,7 @@ export default function Navbar() {
           {navLinks.map((link) => (
             <MobileNavLink
               key={link.name}
-              href={link.href}
+              href={isHomePath ? link.href : `/${link.href}`}
               icon={link.icon}
               label={link.name}
               isActive={activeSection === link.href.substring(1)}

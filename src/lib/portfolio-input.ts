@@ -79,7 +79,16 @@ export function buildProjectCreateInput(body: JsonBody): BuildResult<Prisma.Proj
   return {
     data: {
       title,
+      summary: getOptionalString(body, "summary") ?? null,
       description,
+      role: getOptionalString(body, "role") ?? null,
+      projectType: getOptionalString(body, "projectType") ?? null,
+      period: getOptionalString(body, "period") ?? null,
+      status: getOptionalString(body, "status") ?? null,
+      problem: getOptionalString(body, "problem") ?? null,
+      solution: getOptionalString(body, "solution") ?? null,
+      outcome: getOptionalString(body, "outcome") ?? null,
+      highlights: getStringArray(body, "highlights") ?? [],
       imageUrl,
       technologies: getStringArray(body, "technologies") ?? [],
       demoUrl: getOptionalString(body, "demoUrl") ?? null,
@@ -100,13 +109,32 @@ export function buildProjectUpdateInput(body: JsonBody): BuildResult<Prisma.Proj
     if (value) data[field] = value;
   });
 
+  const optionalTextFields = [
+    "summary",
+    "role",
+    "projectType",
+    "period",
+    "status",
+    "problem",
+    "solution",
+    "outcome",
+  ] as const;
+
+  optionalTextFields.forEach((field) => {
+    const value = getOptionalString(body, field);
+
+    if (value !== undefined) data[field] = value;
+  });
+
+  const highlights = getStringArray(body, "highlights");
   const technologies = getStringArray(body, "technologies");
   const demoUrl = getOptionalString(body, "demoUrl");
   const githubUrl = getOptionalString(body, "githubUrl");
   const featured = getBoolean(body, "featured");
   const sortOrder = getNumber(body, "sortOrder");
 
-  if (technologies) data.technologies = technologies;
+  if (highlights !== undefined) data.highlights = highlights;
+  if (technologies !== undefined) data.technologies = technologies;
   if (demoUrl !== undefined) data.demoUrl = demoUrl;
   if (githubUrl !== undefined) data.githubUrl = githubUrl;
   if (featured !== undefined) data.featured = featured;

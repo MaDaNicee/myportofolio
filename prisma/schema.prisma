@@ -27,7 +27,16 @@ model Profile {
 model Project {
   id           String   @id @default(cuid())
   title        String
+  summary      String?
   description  String
+  role         String?
+  projectType  String?
+  period       String?
+  status       String?
+  problem      String?
+  solution     String?
+  outcome      String?
+  highlights   String[] @default([])
   technologies String[]
   imageUrl     String
   demoUrl      String?
