@@ -1,15 +1,30 @@
 import { NextResponse } from "next/server";
 import { apiError, getErrorMessage, parseJsonBody } from "@/lib/api-utils";
+import { isAdminAuthenticated } from "@/lib/admin-auth";
+import {
+  hashCommentPassword,
+  validateCommentPassword,
+} from "@/lib/comment-password";
 import { buildCommentCreateInput } from "@/lib/portfolio-input";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+
+const publicCommentSelect = {
+  id: true,
+  name: true,
+  role: true,
+  message: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
 
 export async function GET() {
   try {
     const prisma = getPrisma();
     const data = await prisma.comment.findMany({
       orderBy: [{ createdAt: "desc" }],
+      select: publicCommentSelect,
     });
 
     return NextResponse.json(data);
@@ -27,10 +42,24 @@ export async function POST(request: Request) {
 
   if ("error" in result) return apiError(result.error);
 
+  const isAdmin = await isAdminAuthenticated();
+  const password = typeof body.password === "string" ? body.password : "";
+
+  if (!isAdmin || password) {
+    const passwordError = validateCommentPassword(password);
+
+    if (passwordError) return apiError(passwordError);
+  }
+
   try {
     const prisma = getPrisma();
+    const passwordHash = password ? await hashCommentPassword(password) : null;
     const data = await prisma.comment.create({
-      data: result.data,
+      data: {
+        ...result.data,
+        passwordHash,
+      },
+      select: publicCommentSelect,
     });
 
     return NextResponse.json(data, { status: 201 });

@@ -11,7 +11,7 @@ import MagneticButton from '@/components/MagneticButton';
 import DecryptedText from '@/components/react-bits/DecryptedText'; 
 import ShinyText from '@/components/react-bits/ShinyText';       
 import { buildSkillsData, type ApiSkill, type Certificate, type Experience, type PortfolioComment, type ProfileData, type Project } from '@/lib/data';
-import { FiChevronLeft, FiChevronRight, FiEdit3, FiMessageCircle, FiMessageSquare, FiPlus, FiSend, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiChevronLeft, FiChevronRight, FiEdit3, FiLock, FiMessageCircle, FiMessageSquare, FiPlus, FiSend, FiTrash2, FiX } from 'react-icons/fi';
 
 const DynamicScrollScene3D = dynamic(() => import('@/components/ScrollScene3D'), {
   ssr: false,
@@ -98,7 +98,10 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
   const cvUrl = profile.cvUrl ?? "";
   const [commentItems, setCommentItems] = useState<PortfolioComment[]>(initialData.comments);
   const [editingCommentId, setEditingCommentId] = useState<PortfolioComment["id"] | null>(null);
-  const [commentForm, setCommentForm] = useState({ name: "", role: "", message: "" });
+  const [commentForm, setCommentForm] = useState({ name: "", role: "", message: "", password: "" });
+  const [deletingComment, setDeletingComment] = useState<PortfolioComment | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [commentError, setCommentError] = useState("");
   const [isCommentSaving, setIsCommentSaving] = useState(false);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [activeCommentIndex, setActiveCommentIndex] = useState(0);
@@ -133,8 +136,9 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
     : "#contact";
 
   const resetCommentForm = () => {
-    setCommentForm({ name: "", role: "", message: "" });
+    setCommentForm({ name: "", role: "", message: "", password: "" });
     setEditingCommentId(null);
+    setCommentError("");
   };
 
   const openAddCommentModal = () => {
@@ -161,17 +165,30 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
     }).format(date);
   };
 
+  const readCommentApiError = async (response: Response, fallback: string) => {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+
+    return data?.error || fallback;
+  };
+
   const handleCommentSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const name = commentForm.name.trim();
     const role = commentForm.role.trim() || "Visitor";
     const message = commentForm.message.trim();
+    const password = commentForm.password;
 
     if (!name || !message || isCommentSaving) return;
 
-    const payload = { name, role, message };
+    if (password.trim().length < 6) {
+      setCommentError("Password komentar minimal 6 karakter.");
+      return;
+    }
 
+    const payload = { name, role, message, password };
+
+    setCommentError("");
     setIsCommentSaving(true);
 
     try {
@@ -182,7 +199,9 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
           body: JSON.stringify(payload),
         });
 
-        if (!response.ok) throw new Error("API komentar belum siap.");
+        if (!response.ok) {
+          throw new Error(await readCommentApiError(response, "Komentar gagal diperbarui."));
+        }
 
         const updatedComment = (await response.json()) as PortfolioComment;
 
@@ -196,7 +215,9 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
           body: JSON.stringify(payload),
         });
 
-        if (!response.ok) throw new Error("API komentar belum siap.");
+        if (!response.ok) {
+          throw new Error(await readCommentApiError(response, "Komentar gagal disimpan."));
+        }
 
         const createdComment = (await response.json()) as PortfolioComment;
 
@@ -207,16 +228,74 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
       resetCommentForm();
       setIsCommentModalOpen(false);
     } catch (error) {
-      console.warn(editingCommentId ? "Gagal memperbarui komentar melalui API." : "Gagal menyimpan komentar melalui API.", error);
+      setCommentError(error instanceof Error ? error.message : "Terjadi kesalahan saat menyimpan komentar.");
     } finally {
       setIsCommentSaving(false);
     }
   };
 
   const handleEditComment = (comment: PortfolioComment) => {
+    setDeletingComment(null);
+    setDeletePassword("");
+    setCommentError("");
     setEditingCommentId(comment.id);
-    setCommentForm({ name: comment.name, role: comment.role, message: comment.message });
+    setCommentForm({ name: comment.name, role: comment.role, message: comment.message, password: "" });
     setIsCommentModalOpen(true);
+  };
+
+  const openDeleteCommentModal = (comment: PortfolioComment) => {
+    setIsCommentModalOpen(false);
+    setDeletingComment(comment);
+    setDeletePassword("");
+    setCommentError("");
+  };
+
+  const closeDeleteCommentModal = () => {
+    if (isCommentSaving) return;
+
+    setDeletingComment(null);
+    setDeletePassword("");
+    setCommentError("");
+  };
+
+  const handleDeleteComment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!deletingComment || isCommentSaving) return;
+
+    if (deletePassword.trim().length < 6) {
+      setCommentError("Password komentar minimal 6 karakter.");
+      return;
+    }
+
+    setCommentError("");
+    setIsCommentSaving(true);
+
+    try {
+      const response = await fetch(`/api/comments/${encodeURIComponent(String(deletingComment.id))}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await readCommentApiError(response, "Komentar gagal dihapus."));
+      }
+
+      const remainingComments = commentItems.filter((comment) => comment.id !== deletingComment.id);
+
+      setCommentItems(remainingComments);
+      setActiveCommentIndex((currentIndex) =>
+        remainingComments.length ? currentIndex % remainingComments.length : 0,
+      );
+      setDeletingComment(null);
+      setDeletePassword("");
+      setCommentError("");
+    } catch (error) {
+      setCommentError(error instanceof Error ? error.message : "Terjadi kesalahan saat menghapus komentar.");
+    } finally {
+      setIsCommentSaving(false);
+    }
   };
 
   const scrollCommentSlider = (direction: "left" | "right") => {
@@ -274,13 +353,13 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
     if (prefersReducedMotion) return;
 
     const intervalId = window.setInterval(() => {
-      if (isCommentSliderPausedRef.current || isCommentModalOpen) return;
+      if (isCommentSliderPausedRef.current || isCommentModalOpen || deletingComment) return;
 
       setActiveCommentIndex((currentIndex) => (currentIndex - 1 + commentItems.length) % commentItems.length);
     }, 3300);
 
     return () => window.clearInterval(intervalId);
-  }, [commentItems.length, isCommentModalOpen]);
+  }, [commentItems.length, deletingComment, isCommentModalOpen]);
 
   return (
     <main className="min-h-screen overflow-hidden relative transition-colors duration-300">
@@ -815,14 +894,24 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
                             </div>
 
                             {isCenter ? (
-                              <button
-                                type="button"
-                                onClick={() => handleEditComment(comment)}
-                                className="relative z-20 flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-2xl border border-light-border/70 bg-white/70 text-text-light-secondary shadow-lg shadow-black/5 transition-all active:scale-95 hover:border-accent-primary/40 hover:text-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary md:h-10 md:w-10 md:rounded-xl"
-                                aria-label={`Edit komen dari ${comment.name}`}
-                              >
-                                <FiEdit3 className="h-5 w-5 md:h-4 md:w-4" />
-                              </button>
+                              <div className="relative z-20 flex shrink-0 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditComment(comment)}
+                                  className="flex h-11 w-11 touch-manipulation items-center justify-center rounded-xl border border-light-border/70 bg-white/70 text-text-light-secondary shadow-lg shadow-black/5 transition-all active:scale-95 hover:border-accent-primary/40 hover:text-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary md:h-10 md:w-10"
+                                  aria-label={`Edit komen dari ${comment.name}`}
+                                >
+                                  <FiEdit3 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openDeleteCommentModal(comment)}
+                                  className="flex h-11 w-11 touch-manipulation items-center justify-center rounded-xl border border-light-border/70 bg-white/70 text-text-light-secondary shadow-lg shadow-black/5 transition-all active:scale-95 hover:border-red-400/50 hover:text-red-500 dark:border-white/10 dark:bg-white/10 dark:text-text-dark-secondary md:h-10 md:w-10"
+                                  aria-label={`Hapus komen dari ${comment.name}`}
+                                >
+                                  <FiTrash2 className="h-4 w-4" />
+                                </button>
+                              </div>
                             ) : null}
                           </div>
 
@@ -1033,7 +1122,7 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
       <AnimatePresence>
         {isCommentModalOpen ? (
           <motion.div
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/60 p-4 py-6 backdrop-blur-md sm:items-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1047,7 +1136,7 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
               exit={{ opacity: 0, y: 24, scale: 0.96 }}
               transition={{ duration: 0.32, ease: [0.21, 0.47, 0.32, 0.98] }}
               onClick={(event) => event.stopPropagation()}
-              className="relative w-full max-w-xl overflow-hidden rounded-[2rem] border border-light-border/70 bg-white/85 p-6 shadow-2xl shadow-black/20 backdrop-blur-2xl dark:border-white/10 dark:bg-black/80"
+              className="relative max-h-[calc(100dvh-3rem)] w-full max-w-xl overflow-y-auto rounded-[2rem] border border-light-border/70 bg-white/90 p-6 shadow-2xl shadow-black/20 backdrop-blur-2xl dark:border-white/10 dark:bg-black/85"
             >
               <div aria-hidden="true" className="absolute -right-20 -top-20 h-44 w-44 rounded-full bg-accent-primary/20 blur-3xl" />
               <div aria-hidden="true" className="absolute -bottom-24 left-8 h-44 w-44 rounded-full bg-accent-secondary/15 blur-3xl" />
@@ -1106,12 +1195,40 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
                   rows={5}
                   className="w-full resize-none rounded-2xl border border-light-border/70 bg-white/75 px-4 py-3 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-primary"
                 />
+                <div>
+                  <div className="relative">
+                    <FiLock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-light-muted dark:text-text-dark-muted" />
+                    <input
+                      type="password"
+                      value={commentForm.password}
+                      onChange={(event) => setCommentForm((form) => ({ ...form, password: event.target.value }))}
+                      placeholder={editingCommentId ? "Masukkan password komentar" : "Buat password komentar"}
+                      aria-label="Password komentar"
+                      autoComplete={editingCommentId ? "current-password" : "new-password"}
+                      required
+                      minLength={6}
+                      maxLength={72}
+                      className="w-full rounded-2xl border border-light-border/70 bg-white/75 py-3 pl-11 pr-4 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-accent-primary dark:border-white/10 dark:bg-white/10 dark:text-text-dark-primary"
+                    />
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-text-light-muted dark:text-text-dark-muted">
+                    {editingCommentId
+                      ? "Gunakan password yang dibuat saat komentar dikirim."
+                      : "Minimal 6 karakter. Password ini diperlukan untuk mengedit atau menghapus komentar."}
+                  </p>
+                </div>
               </div>
+
+              {commentError ? (
+                <p className="relative z-10 mt-4 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-600 dark:text-red-400">
+                  {commentError}
+                </p>
+              ) : null}
 
               <div className="relative z-10 mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="submit"
-                  disabled={isCommentSaving || !commentForm.name.trim() || !commentForm.message.trim()}
+                  disabled={isCommentSaving || !commentForm.name.trim() || !commentForm.message.trim() || commentForm.password.trim().length < 6}
                   className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-accent-primary to-accent-secondary px-5 py-4 text-base font-bold leading-none text-white shadow-xl shadow-accent-primary/25 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                 >
                   <span>{isCommentSaving ? "Menyimpan" : editingCommentId ? "Update" : "Kirim"}</span>
@@ -1124,6 +1241,97 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
                   className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-light-border/70 bg-white/70 px-5 py-4 text-base font-bold leading-none text-text-light-primary transition-all hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
                 >
                   <FiX className="h-5 w-5 shrink-0" />
+                  Batal
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {deletingComment ? (
+          <motion.div
+            className="fixed inset-0 z-[75] flex items-start justify-center overflow-y-auto bg-black/60 p-4 py-6 backdrop-blur-md sm:items-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeDeleteCommentModal}
+          >
+            <motion.form
+              onSubmit={handleDeleteComment}
+              initial={{ opacity: 0, y: 28, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.97 }}
+              transition={{ duration: 0.25 }}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-md rounded-[2rem] border border-light-border/70 bg-white/90 p-6 shadow-2xl shadow-black/20 backdrop-blur-2xl dark:border-white/10 dark:bg-black/85"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-500/10 text-red-500">
+                    <FiAlertTriangle className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-red-500">Hapus Komentar</p>
+                    <h3 className="mt-2 text-xl font-black text-text-light-primary dark:text-text-dark-primary">
+                      Komentar dari {deletingComment.name}
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeDeleteCommentModal}
+                  disabled={isCommentSaving}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-light-border/70 text-text-light-secondary transition-colors hover:border-red-400/50 hover:text-red-500 dark:border-white/10 dark:text-text-dark-secondary"
+                  aria-label="Tutup konfirmasi hapus"
+                >
+                  <FiX className="h-4 w-4" />
+                </button>
+              </div>
+
+              <p className="mt-5 text-sm leading-6 text-text-light-secondary dark:text-text-dark-secondary">
+                Masukkan password komentar untuk menghapusnya secara permanen.
+              </p>
+
+              <div className="relative mt-5">
+                <FiLock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-light-muted dark:text-text-dark-muted" />
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(event) => setDeletePassword(event.target.value)}
+                  placeholder="Password komentar"
+                  aria-label="Password untuk menghapus komentar"
+                  autoComplete="current-password"
+                  required
+                  minLength={6}
+                  maxLength={72}
+                  autoFocus
+                  className="w-full rounded-2xl border border-light-border/70 bg-white/75 py-3 pl-11 pr-4 text-sm text-text-light-primary outline-none transition-colors placeholder:text-text-light-muted focus:border-red-400 dark:border-white/10 dark:bg-white/10 dark:text-text-dark-primary"
+                />
+              </div>
+
+              {commentError ? (
+                <p className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-600 dark:text-red-400">
+                  {commentError}
+                </p>
+              ) : null}
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="submit"
+                  disabled={isCommentSaving || deletePassword.trim().length < 6}
+                  className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-red-500 px-5 font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                  <FiTrash2 className="h-4 w-4" />
+                  {isCommentSaving ? "Menghapus" : "Hapus Komentar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeDeleteCommentModal}
+                  disabled={isCommentSaving}
+                  className="flex min-h-12 items-center justify-center rounded-xl border border-light-border/70 px-5 font-bold text-text-light-primary transition-colors hover:border-accent-primary/40 dark:border-white/10 dark:text-text-dark-primary"
+                >
                   Batal
                 </button>
               </div>

@@ -29,6 +29,7 @@ export type CommentMinAggregateOutputType = {
   name: string | null
   role: string | null
   message: string | null
+  passwordHash: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -38,6 +39,7 @@ export type CommentMaxAggregateOutputType = {
   name: string | null
   role: string | null
   message: string | null
+  passwordHash: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -47,6 +49,7 @@ export type CommentCountAggregateOutputType = {
   name: number
   role: number
   message: number
+  passwordHash: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -58,6 +61,7 @@ export type CommentMinAggregateInputType = {
   name?: true
   role?: true
   message?: true
+  passwordHash?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -67,6 +71,7 @@ export type CommentMaxAggregateInputType = {
   name?: true
   role?: true
   message?: true
+  passwordHash?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -76,6 +81,7 @@ export type CommentCountAggregateInputType = {
   name?: true
   role?: true
   message?: true
+  passwordHash?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -158,6 +164,7 @@ export type CommentGroupByOutputType = {
   name: string
   role: string
   message: string
+  passwordHash: string | null
   createdAt: Date
   updatedAt: Date
   _count: CommentCountAggregateOutputType | null
@@ -188,6 +195,7 @@ export type CommentWhereInput = {
   name?: Prisma.StringFilter<"Comment"> | string
   role?: Prisma.StringFilter<"Comment"> | string
   message?: Prisma.StringFilter<"Comment"> | string
+  passwordHash?: Prisma.StringNullableFilter<"Comment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
 }
@@ -197,6 +205,7 @@ export type CommentOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   role?: Prisma.SortOrder
   message?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -209,6 +218,7 @@ export type CommentWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Comment"> | string
   role?: Prisma.StringFilter<"Comment"> | string
   message?: Prisma.StringFilter<"Comment"> | string
+  passwordHash?: Prisma.StringNullableFilter<"Comment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
 }, "id">
@@ -218,6 +228,7 @@ export type CommentOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   role?: Prisma.SortOrder
   message?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CommentCountOrderByAggregateInput
@@ -233,6 +244,7 @@ export type CommentScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Comment"> | string
   role?: Prisma.StringWithAggregatesFilter<"Comment"> | string
   message?: Prisma.StringWithAggregatesFilter<"Comment"> | string
+  passwordHash?: Prisma.StringNullableWithAggregatesFilter<"Comment"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Comment"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Comment"> | Date | string
 }
@@ -242,6 +254,7 @@ export type CommentCreateInput = {
   name: string
   role?: string
   message: string
+  passwordHash?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -251,6 +264,7 @@ export type CommentUncheckedCreateInput = {
   name: string
   role?: string
   message: string
+  passwordHash?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -260,6 +274,7 @@ export type CommentUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -269,6 +284,7 @@ export type CommentUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -278,6 +294,7 @@ export type CommentCreateManyInput = {
   name: string
   role?: string
   message: string
+  passwordHash?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -287,6 +304,7 @@ export type CommentUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -296,6 +314,7 @@ export type CommentUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   role?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -305,6 +324,7 @@ export type CommentCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   role?: Prisma.SortOrder
   message?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -314,6 +334,7 @@ export type CommentMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   role?: Prisma.SortOrder
   message?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -323,6 +344,7 @@ export type CommentMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   role?: Prisma.SortOrder
   message?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -334,6 +356,7 @@ export type CommentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name?: boolean
   role?: boolean
   message?: boolean
+  passwordHash?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["comment"]>
@@ -343,6 +366,7 @@ export type CommentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   name?: boolean
   role?: boolean
   message?: boolean
+  passwordHash?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["comment"]>
@@ -352,6 +376,7 @@ export type CommentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   name?: boolean
   role?: boolean
   message?: boolean
+  passwordHash?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["comment"]>
@@ -361,11 +386,12 @@ export type CommentSelectScalar = {
   name?: boolean
   role?: boolean
   message?: boolean
+  passwordHash?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CommentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "role" | "message" | "createdAt" | "updatedAt", ExtArgs["result"]["comment"]>
+export type CommentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "role" | "message" | "passwordHash" | "createdAt" | "updatedAt", ExtArgs["result"]["comment"]>
 
 export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Comment"
@@ -375,6 +401,7 @@ export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     name: string
     role: string
     message: string
+    passwordHash: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["comment"]>
@@ -804,6 +831,7 @@ export interface CommentFieldRefs {
   readonly name: Prisma.FieldRef<"Comment", 'String'>
   readonly role: Prisma.FieldRef<"Comment", 'String'>
   readonly message: Prisma.FieldRef<"Comment", 'String'>
+  readonly passwordHash: Prisma.FieldRef<"Comment", 'String'>
   readonly createdAt: Prisma.FieldRef<"Comment", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Comment", 'DateTime'>
 }

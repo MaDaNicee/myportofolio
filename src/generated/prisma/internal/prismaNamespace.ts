@@ -989,6 +989,7 @@ export const CommentScalarFieldEnum = {
   name: 'name',
   role: 'role',
   message: 'message',
+  passwordHash: 'passwordHash',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
