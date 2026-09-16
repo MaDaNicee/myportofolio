@@ -25,11 +25,13 @@ const DynamicPhotoCard3D = dynamic(() => import('@/components/PhotoCard3D'), {
   ),
 });
 
-const DynamicMeteors = dynamic(() => import('@/components/Meteors'), {
-  ssr: false,
-  loading: () => null,
-});
-
+const DynamicCosmicMeteorSingularity = dynamic(
+  () => import('@/components/CosmicMeteorSingularity'),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
 
 const DynamicContactForm = dynamic(() => import('@/components/ContactForm'), {
   ssr: false,
@@ -363,6 +365,7 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
 
   return (
     <main className="min-h-screen overflow-hidden relative transition-colors duration-300">
+      <DynamicCosmicMeteorSingularity />
       
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-light-bg/50 to-light-bg dark:via-dark-bg/50 dark:to-dark-bg pointer-events-none z-0" />
@@ -677,9 +680,6 @@ export default function HomePageClient({ initialData }: { initialData: HomePageD
           
           <FadeIn>
             <div className="relative rounded-[3rem] p-8 md:p-16 border border-light-border/50 dark:border-white/10 bg-white/50 dark:bg-black/25 backdrop-blur-2xl shadow-2xl overflow-hidden">
-                <div className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-30">
-                    <DynamicMeteors number={12} />
-                </div>
                 <div className="absolute -top-32 -right-32 w-80 h-80 bg-accent-primary/10 rounded-full blur-3xl -z-10" />
                 <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-accent-secondary/10 rounded-full blur-3xl -z-10" />
 

@@ -135,3 +135,26 @@
 .animate-scroll-right { animation: scroll-right 30s linear infinite; }
 .hover-pause:hover .animate-scroll-left,
 .hover-pause:hover .animate-scroll-right { animation-play-state: paused; }
+
+@keyframes cosmic-pointer-icon-breathe {
+  0%,
+  100% {
+    opacity: 0.28;
+    filter: drop-shadow(0 0 0 rgba(139, 92, 246, 0));
+  }
+  50% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 7px rgba(139, 92, 246, 0.75));
+  }
+}
+
+.cosmic-pointer-icon-idle {
+  animation: cosmic-pointer-icon-breathe 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmic-pointer-icon-idle {
+    animation: none;
+    opacity: 0.6;
+  }
+}
