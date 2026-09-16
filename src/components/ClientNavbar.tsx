@@ -129,6 +129,10 @@ export default function Navbar() {
 
   return (
     <>
+      <div className="fixed right-4 top-20 z-[55] sm:right-6 sm:top-24">
+        <ThemeToggle />
+      </div>
+
       <motion.nav
         className="fixed left-5 top-1/2 z-50 hidden md:block"
         initial={{ x: -120, opacity: 0 }}
@@ -172,14 +176,6 @@ export default function Navbar() {
               ))}
             </div>
 
-            <div className="mt-2 border-t border-light-border/60 pt-2 dark:border-white/10">
-              <div className="flex h-10 items-center rounded-xl px-1">
-                <ThemeToggle compact />
-                <span className="ml-2.5 max-w-0 overflow-hidden whitespace-nowrap text-xs font-semibold text-text-light-secondary opacity-0 transition-all duration-300 group-hover/sidebar:max-w-[130px] group-hover/sidebar:opacity-100 group-focus-within/sidebar:max-w-[130px] group-focus-within/sidebar:opacity-100 dark:text-text-dark-secondary">
-                  Theme
-                </span>
-              </div>
-            </div>
           </div>
 
           <div className="absolute bottom-5 left-1/2 h-14 w-px -translate-x-1/2 bg-gradient-to-b from-accent-primary/60 to-transparent opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100" />
@@ -205,9 +201,6 @@ export default function Navbar() {
               onNavigate={setActiveSection}
             />
           ))}
-          <div className="ml-1 border-l border-light-border/60 pl-2 dark:border-white/10">
-            <ThemeToggle compact />
-          </div>
         </div>
       </motion.nav>
     </>
